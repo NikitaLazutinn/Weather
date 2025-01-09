@@ -1,12 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, Post, Query } from '@nestjs/common';
+import { WeatherService } from './app.service';
+import { FetchDto } from './dto/dto';
 
-@Controller()
-export class AppController {
-  constructor(private readonly appService: AppService) {}
+@Controller('weather')
+export class WeatherController {
+  constructor(private readonly weatherService: WeatherService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Post('fetch')
+  async fetchWeather(@Query()params: FetchDto) {
+    return await this.weatherService.fetch(params);
   }
 }
