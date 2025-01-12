@@ -1,21 +1,30 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException} from '@nestjs/common';
 import { Transform } from 'class-transformer';
 import {
   IsOptional,
-  IsIn,
   IsNumber,
-  IsArray,
   IsString,
   ValidateIf,
 } from 'class-validator';
 
 export class FetchDto {
   @IsNumber()
-  @Transform(({ value }) => parseFloat(value))
+  @Transform(({ value }) => {
+    const parsedValue = parseFloat(value);
+    if (parsedValue > 90 || parsedValue < -90) {
+      throw new BadRequestException(`lat should be between -90 and 90`);
+    }
+    return parsedValue;
+  })
   lat: number;
 
   @IsNumber()
-  @Transform(({ value }) => parseFloat(value))
+  @Transform(({ value }) => {
+  const parsedValue = parseFloat(value);
+  if (parsedValue > 180 || parsedValue < -180) {
+    throw new BadRequestException(`lon should be > -180 and < 180`);
+  }
+  return parsedValue})
   lon: number;
 
   @IsOptional()
@@ -33,7 +42,6 @@ export class FetchDto {
       return true;
     }
     const validValues = ['current', 'minutely', 'hourly', 'daily', 'alerts'];
-    console.log(value);
       const parts = value.split(',');
       const isValid = parts.every((part) => validValues.includes(part));
       if (!isValid) {
