@@ -4,32 +4,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nest_app
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
-      DATABASE_URL: "postgresql://postgres:1234@localhost:5432/postgres?schema=public"
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - db
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/prisma
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
     command: >
-      sh -c "npx prisma generate &&
+      sh -c "npx prisma migrate deploy &&
+             npx prisma generate &&
              npm run start:dev"
-
   db:
-    image: postgres:14
-    container_name: postgres_db
-    ports:
-      - "5432:5432"
+    image: postgres:15
+    restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
 
-volumes:
-  postgres_data:
