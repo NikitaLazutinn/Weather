@@ -13,7 +13,7 @@ import {
 
       const response = context.switchToHttp().getResponse();
 
-      response.status(201);
+      response.status(200);
 
       return next.handle().pipe(
         map((data) => {
