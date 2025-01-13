@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import axios from 'axios';
 import * as dotenv from 'dotenv';
 import { FetchDto } from './dto/dto';
@@ -23,46 +23,71 @@ export class WeatherService {
     if (params.part) {
       requestParams.exclude = params.part;
     }
-    try{
-        const response = await axios.get(this.apiUrl, { params: requestParams });
-        const response_data = response.data;
-        delete response_data.lat;
-        delete response_data.lon;
+    try {
+      let response_data;
+      try {
+        const response = await axios.get(this.apiUrl, {
+          params: requestParams,
+        });
+        response_data = response.data;
+      } catch (ApiErr) {
+        throw new NotFoundException('Something went wrong with API');
+      }
 
-        try{
-          const exist = await this.prisma.weatherData.findMany({where:{
-            lat: params.lat,
-            lon: params.lon
-          }})
+      if (
+        !response_data['current'] &&
+        !response_data['daily'] &&
+        !response_data['hourly']
+      ) {
+        throw new BadRequestException(
+          'You asked for an empty data (too mach params in part)',
+        );
+      }
 
-          if(exist.length > 0){
-            await this.prisma.weatherData.deleteMany({where:{
-              lat: params.lat,
-              lon: params.lon
-            }})
-          }
+      delete response_data.lat;
+      delete response_data.lon;
 
-          const db_data = {
+      try {
+        const exist = await this.prisma.weatherData.findMany({
+          where: {
             lat: params.lat,
             lon: params.lon,
-            data: response_data,
-          }
+          },
+        });
 
-          await this.prisma.weatherData.create({
-            data: db_data
+        if (exist.length > 0) {
+          await this.prisma.weatherData.deleteMany({
+            where: {
+              lat: params.lat,
+              lon: params.lon,
+            },
           });
-
-          return {
-            statusCode: 201,
-            message: "data succesfully fetched and writed to database",
-            db_data: db_data,
-          };
-        }catch(err){
-          throw new NotFoundException('Something went wrong with database');
         }
 
-    }catch(err){
-      throw new NotFoundException('Something went wrong with API')
+        const db_data = {
+          lat: params.lat,
+          lon: params.lon,
+          data: response_data,
+        };
+
+        await this.prisma.weatherData.create({
+          data: db_data,
+        });
+
+        return {
+          statusCode: 201,
+          message: 'data succesfully fetched and writed to the database',
+          db_data: db_data,
+        };
+      } catch (dbError) {
+        throw new NotFoundException('Something went wrong with the database');
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new BadRequestException(error.message);
+      } else {
+        throw new NotFoundException(error.message);
+      }
     }
   }
 
@@ -98,7 +123,7 @@ export class WeatherService {
        return db_data.data;
 
     }catch(err){
-      throw new NotFoundException('Something went wrong with database')
+      throw new NotFoundException('Something went wrong with the database')
     }
   }
 }
