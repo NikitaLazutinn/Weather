@@ -32,6 +32,7 @@ import {
           }  
 
         let responce = {};
+
         if(data['current']){
           responce['current'] = format(data.current);
         }
@@ -42,6 +43,20 @@ import {
 
         if (data['daily']) {
           responce['daily'] = data.daily.map(format);
+        }
+
+        if (data['minutely']) {
+          responce['minutely'] = data.minutely.map(format);
+        }
+
+        if (data['alerts']) {
+          responce['alerts'] = data.alerts.map(format);
+        }
+
+        if (Object.keys(responce).length === 0) {
+          return {
+            status: 'there is no such data written in the db'
+          };
         }
 
           return {

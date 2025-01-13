@@ -37,7 +37,9 @@ export class WeatherService {
       if (
         !response_data['current'] &&
         !response_data['daily'] &&
-        !response_data['hourly']
+        !response_data['hourly'] &&
+        !response_data['minutely'] &&
+        !response_data['alerts']
       ) {
         throw new BadRequestException(
           'You asked for an empty data (too mach params in part)',
@@ -100,27 +102,27 @@ export class WeatherService {
 
     try{
 
-        let db_data = await this.prisma.weatherData.findFirst({
-          where: requestParams
-        })
+      let db_data = await this.prisma.weatherData.findFirst({
+        where: requestParams
+      })
 
 
-        if(!db_data){
-          return {
-            statusCode: 200,
-            message: "there is no such data in the database"
-          };
+      if(!db_data){
+        return {
+          statusCode: 200,
+          message: "there is no such data in the database"
+        };
+      }
+
+    
+      if(params.part){
+        const exclude = params.part.split(',');
+        for(let i = 0; exclude.length > i; i++){
+          delete db_data.data[exclude[i]];
         }
+      }
 
-     
-        if(params.part){
-          const exclude = params.part.split(',');
-          for(let i = 0; exclude.length > i; i++){
-            delete db_data.data[exclude[i]];
-          }
-        }
-
-       return db_data.data;
+      return db_data.data;
 
     }catch(err){
       throw new NotFoundException('Something went wrong with the database')
